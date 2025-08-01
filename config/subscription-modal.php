@@ -12,6 +12,7 @@ return [
     'api_url' => env('SUBSCRIPTION_API_URL'),
     'api_token' => env('SUBSCRIPTION_API_TOKEN'),
     'check_interval' => env('SUBSCRIPTION_CHECK_INTERVAL', 300), // 5 minutos por defecto
+    'accountNumber1' => env('ACCOUNT_NUMBER_1', '12345678'), // Número de cuenta 1
 
     /*
     |--------------------------------------------------------------------------

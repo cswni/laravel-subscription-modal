@@ -230,27 +230,6 @@
                         </div>
                     </div>
 
-                    <!-- Información de contacto con diseño moderno -->
-                    <div class="contact-info-section">
-                        <div class="contact-card">
-                            <div class="contact-header">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
-                                <h3>Contacto Directo</h3>
-                            </div>
-                            <div class="contact-details">
-                                <p><strong>Carlos Andres Perez</strong></p>
-                                <p class="contact-phone">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                    8537-1146 (WhatsApp)
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Información de pago con diseño destacado -->
                     <div class="payment-info-section">
                         <div class="payment-card">
@@ -262,8 +241,8 @@
                             </div>
                             <div class="payment-details">
                                 <div class="bank-info">
-                                    <span class="bank-label">Banco Lafise Nicaragua</span>
-                                    <span class="account-number">1234-5678-9012</span>
+                                    <span class="bank-label">Banco Lafise Nicaragua: <span class="account-number">{{ config('subscription-modal.accountNumber1') }}</span></span>
+
                                 </div>
                                 <div class="payment-note">
                                     <span class="note-icon">📋</span>
@@ -1057,10 +1036,10 @@
         }
 
         .overlay-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 800;
             color: #1f2937;
-            margin: 0 0 12px 0;
+            margin: 0 0 6px 0;
             position: relative;
             z-index: 1;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -1199,7 +1178,7 @@
         }
 
         .account-number {
-            display: block;
+            display: inline-block;
             color: #1f2937;
             font-size: 16px;
             font-weight: 700;
