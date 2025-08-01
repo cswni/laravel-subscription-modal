@@ -221,8 +221,6 @@ class SubscriptionService
         $criticalDays = config('subscription-modal.critical_days', 0);
         $warningDays = config('subscription-modal.warning_days', 5);
 
-        ray($days);
-
         if ($days <= 0) {
             return 'red';
         }
