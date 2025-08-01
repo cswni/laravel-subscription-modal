@@ -37,6 +37,10 @@ class LaravelSubscriptionModalServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../resources/css' => resource_path('css/vendor/subscription-modal'),
             ], 'subscription-modal-assets');
+
+            $this->publishes([
+                __DIR__.'/../resources/views/filament' => resource_path('views/vendor/subscription-modal/filament'),
+            ], 'subscription-modal-filament');
         }
 
         // Registrar componentes Livewire con compatibilidad para v2 y v3
@@ -48,9 +52,19 @@ class LaravelSubscriptionModalServiceProvider extends ServiceProvider
         // Cargar CSS
         $this->loadCSS();
 
+        // Auto-incluir el componente en todas las vistas
+        $this->autoIncludeComponent();
+        
+        // Registrar middleware para auto-inclusión
+        $this->registerMiddleware();
+
         // Detectar si Filament está instalado y registrar assets
         if (class_exists(\Filament\FilamentServiceProvider::class)) {
             $this->registerFilamentAssets();
+            $this->registerFilamentComponent();
+            
+            // Registrar el service provider específico de Filament
+            $this->app->register(\LaravelSubscriptionModal\Filament\FilamentSubscriptionModalServiceProvider::class);
         }
 
         // Registrar comandos de consola
@@ -145,11 +159,115 @@ class LaravelSubscriptionModalServiceProvider extends ServiceProvider
     }
 
     /**
+     * Auto-incluir el componente en todas las vistas
+     */
+    protected function autoIncludeComponent(): void
+    {
+        // Verificar si la configuración permite auto-inclusión
+        if (!config('subscription-modal.auto_include', true)) {
+            return;
+        }
+
+        // Verificar si el servicio está configurado
+        $service = new \LaravelSubscriptionModal\Services\SubscriptionService();
+        if (!$service->isConfigured()) {
+            return;
+        }
+
+        // Registrar un View Composer que incluye el componente automáticamente
+        \Illuminate\Support\Facades\View::composer('*', function ($view) {
+            // Verificar si la vista debe ser excluida
+            $excludePatterns = config('subscription-modal.auto_include_exclude_views', []);
+            $viewName = $view->getName();
+            
+            foreach ($excludePatterns as $pattern) {
+                if (fnmatch($pattern, $viewName)) {
+                    return;
+                }
+            }
+
+            // Solo incluir en vistas principales (no en componentes Livewire)
+            if (str_contains($viewName, 'livewire::') || 
+                str_contains($viewName, 'components.') ||
+                str_contains($viewName, 'partials.')) {
+                return;
+            }
+
+            // Agregar el componente al final del body usando una variable compartida
+            $view->with('__subscription_modal_enabled', true);
+        });
+
+        // Crear un Blade directive para incluir el componente
+        if (class_exists(\Illuminate\Support\Facades\Blade::class)) {
+            \Illuminate\Support\Facades\Blade::directive('subscriptionModal', function () {
+                return '<?php if (isset($__subscription_modal_enabled) && $__subscription_modal_enabled): ?>
+                    @livewire("subscription-modal::subscription-component")
+                <?php endif; ?>';
+            });
+
+            // También crear un directive para incluir automáticamente en el final del body
+            \Illuminate\Support\Facades\Blade::directive('subscriptionModalAuto', function () {
+                return '<?php if (isset($__subscription_modal_enabled) && $__subscription_modal_enabled): ?>
+                    @livewire("subscription-modal::subscription-component")
+                <?php endif; ?>';
+            });
+        }
+    }
+
+    /**
+     * Registrar middleware para auto-inclusión
+     */
+    protected function registerMiddleware(): void
+    {
+        // Registrar el middleware globalmente
+        $this->app['router']->pushMiddlewareToGroup('web', \LaravelSubscriptionModal\Middleware\SubscriptionModalMiddleware::class);
+    }
+
+    /**
      * Registrar assets para FilamentPHP
      */
     protected function registerFilamentAssets(): void
     {
         // Aquí se pueden registrar assets específicos para Filament
         // Por ejemplo, estilos CSS personalizados para el tema de Filament
+    }
+
+    /**
+     * Registrar componente para FilamentPHP
+     */
+    protected function registerFilamentComponent(): void
+    {
+        // Verificar si la configuración permite auto-inclusión
+        if (!config('subscription-modal.auto_include', true)) {
+            return;
+        }
+
+        // Verificar si el servicio está configurado
+        $service = new \LaravelSubscriptionModal\Services\SubscriptionService();
+        if (!$service->isConfigured()) {
+            return;
+        }
+
+        // Registrar un View Composer específico para Filament
+        \Illuminate\Support\Facades\View::composer([
+            'filament::components.layouts.app',
+            'filament::components.layouts.base',
+            'filament::layouts.app',
+            'filament::layouts.base',
+            'filament-panels::components.layout.app',
+            'filament-panels::components.layout.base',
+        ], function ($view) {
+            // Agregar el componente al final del body de Filament
+            $view->with('__subscription_modal_enabled', true);
+        });
+
+        // Crear un Blade directive específico para Filament
+        if (class_exists(\Illuminate\Support\Facades\Blade::class)) {
+            \Illuminate\Support\Facades\Blade::directive('subscriptionModalFilament', function () {
+                return '<?php if (isset($__subscription_modal_enabled) && $__subscription_modal_enabled): ?>
+                    @livewire("subscription-modal::subscription-component")
+                <?php endif; ?>';
+            });
+        }
     }
 } 

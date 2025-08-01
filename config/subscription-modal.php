@@ -51,6 +51,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Auto-include Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para auto-incluir el componente
+    |
+    */
+    'auto_include' => env('SUBSCRIPTION_AUTO_INCLUDE', true),
+    'auto_include_exclude_views' => [
+        'auth.*',
+        'errors.*',
+        'vendor.*',
+        'livewire.*',
+    ],
+    'auto_include_exclude_routes' => [
+        'auth/*',
+        'login',
+        'logout',
+        'register',
+        'password/*',
+        'admin/*',
+        'api/*',
+        'telescope/*',
+        'horizon/*',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Debug Mode
     |--------------------------------------------------------------------------
     |

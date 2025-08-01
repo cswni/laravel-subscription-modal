@@ -50,9 +50,11 @@ SUBSCRIPTION_CHECK_INTERVAL=300
 
 **Nota**: El token debe ser un token de Sanctum válido para autenticarse con la API.
 
-### 4. Incluir el componente en tu layout
+### 4. Incluir el componente en tu layout (Opcional)
 
-En tu layout principal (ej: `resources/views/layouts/app.blade.php`):
+**Auto-inclusión (Recomendado)**: El componente se incluye automáticamente en todas las vistas. No necesitas hacer nada más.
+
+**Inclusión manual**: Si prefieres controlar dónde aparece el componente, puedes incluirlo manualmente en tu layout principal:
 
 ```php
 <!DOCTYPE html>
@@ -73,10 +75,23 @@ En tu layout principal (ej: `resources/views/layouts/app.blade.php`):
 
 ### 5. Para FilamentPHP
 
-Si usas FilamentPHP, añade el componente en tu layout de Filament:
+**Auto-inclusión automática**: El componente se incluye automáticamente en aplicaciones FilamentPHP. No necesitas hacer nada más.
 
+**Inclusión manual**: Si prefieres controlar manualmente la inclusión, puedes:
+
+1. Publicar las vistas de Filament:
+```bash
+php artisan vendor:publish --tag=subscription-modal-filament
+```
+
+2. Incluir el componente en tu layout de Filament:
 ```php
 // En resources/views/vendor/filament/components/layouts/app.blade.php
+@include('vendor.subscription-modal.filament.components.subscription-modal')
+```
+
+O usar el componente Livewire directamente:
+```php
 @livewire('subscription-modal::subscription-component')
 ```
 
@@ -89,6 +104,7 @@ Si usas FilamentPHP, añade el componente en tu layout de Filament:
 | `SUBSCRIPTION_API_URL` | URL de la API de verificación de licencia | - | ✅ |
 | `SUBSCRIPTION_API_TOKEN` | Token de Sanctum para autenticación | - | ✅ |
 | `SUBSCRIPTION_CHECK_INTERVAL` | Intervalo de verificación en segundos | 300 | ❌ |
+| `SUBSCRIPTION_AUTO_INCLUDE` | Auto-incluir el componente en todas las vistas | true | ❌ |
 
 ### Configuración avanzada
 
@@ -102,6 +118,16 @@ return [
     'warning_days' => 5,        // Días para mostrar advertencia (naranja)
     'critical_days' => 2,       // Días para mostrar crítico (rojo)
     'position' => 'bottom-right', // Posición del badge
+    'auto_include' => true,     // Auto-incluir el componente
+    'auto_include_exclude_routes' => [
+        'auth/*',
+        'login',
+        'logout',
+        'register',
+        'password/*',
+        'admin/*',
+        'api/*',
+    ],
 ];
 ```
 
@@ -124,6 +150,46 @@ Este paquete es compatible con:
 ## Uso
 
 El paquete se auto-registra y funciona automáticamente una vez configurado.
+
+### Auto-inclusión del componente
+
+Por defecto, el componente se incluye automáticamente en todas las vistas de tu aplicación. Esto significa que:
+
+- **No necesitas** agregar manualmente `@livewire('subscription-modal::subscription-component')` en tus layouts
+- El componente aparecerá automáticamente en todas las páginas
+- Se excluyen automáticamente rutas como autenticación, API, etc.
+
+#### Deshabilitar auto-inclusión
+
+Si prefieres controlar manualmente dónde aparece el componente, puedes deshabilitar la auto-inclusión:
+
+```env
+SUBSCRIPTION_AUTO_INCLUDE=false
+```
+
+Y luego incluir manualmente el componente donde lo necesites:
+
+```php
+@livewire('subscription-modal::subscription-component')
+```
+
+#### Personalizar rutas excluidas
+
+Puedes personalizar qué rutas se excluyen de la auto-inclusión en `config/subscription-modal.php`:
+
+```php
+'auto_include_exclude_routes' => [
+    'auth/*',
+    'login',
+    'logout',
+    'register',
+    'password/*',
+    'admin/*',
+    'api/*',
+    'telescope/*',
+    'horizon/*',
+],
+```
 
 ### Comportamiento del badge:
 
@@ -250,6 +316,13 @@ composer require tu-namespace/laravel-subscription-modal:dev-master
 ### Modal no se cierra cuando expira:
 - Este es el comportamiento esperado para suscripciones vencidas
 - Solo se puede cerrar verificando el pago
+
+### El componente no aparece en FilamentPHP:
+- Verifica que FilamentPHP esté instalado correctamente
+- Asegúrate de que las variables de entorno estén configuradas
+- Si usas Filament v3, el componente se incluye automáticamente
+- Para Filament v2, puedes publicar las vistas: `php artisan vendor:publish --tag=subscription-modal-filament`
+- Verifica que no haya conflictos de z-index con otros elementos de Filament
 
 ## Licencia
 
