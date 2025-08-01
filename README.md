@@ -1,29 +1,28 @@
-# Paquete para mostrar un modal en la parte inferior derecha de una app con laravel
+# Laravel Subscription Modal Package
 
 ## Descripción
 
-Este paquete se debe comunicar con una API a través de http para obtener el estado de la suscripción. Se enviará un token alojado en el .env para saber cuando es la fecha final del periodo pagado (por lo general 1 mes).
+Este paquete de Laravel se comunica con una API HTTP para obtener el estado de la suscripción y mostrar un modal de suscripción en la parte inferior derecha de la aplicación. Utiliza un token de Sanctum almacenado en el `.env` para autenticarse con la API.
 
-En la parte inferior de la pantalla se debe mostrar un badge con los días restantes y al dar clic un modal con los detalles de la suscripción y el historial de facturas. 
+El paquete muestra un badge flotante con los días restantes de suscripción. Al hacer clic en el badge, se abre un modal con los detalles de la suscripción y el historial de facturas. Los colores del badge cambian según los días restantes: verde (normal), naranja (advertencia), rojo (crítico).
 
-Calcular los días restantes tomando la fecha actual como referencia para que cuando falten 5 días mostrar en naranja, cuando falten 2 días mostrar en rojo. El resto del tiempo en verde.
-
-Si llega a tener 0 días disponibles mostrar un modal overlay que bloquea la aplicación. Añadir un botón que permita verificar el estado de la suscripción para quitarlo en caso de haber recibido el pago.
-
-Este proyecto usará el sistema de Service Provider para que se auto registre el plugin / paquete en cualquier aplicación laravel instalada. También debe ser compatible con aplicaciones de FilamentPHP desde la versión 2 en adelante. En este proyecto usar Livewire y su mecanismo de componentes.
+Si la suscripción expira (0 días restantes), se muestra un modal overlay bloqueante que no se puede cerrar hasta que se verifique el pago.
 
 ## Características
 
 - ✅ Componente unificado (badge, modal y overlay en uno solo)
 - ✅ Badge flotante en la esquina inferior derecha
-- ✅ Modal con detalles de suscripción
-- ✅ Colores dinámicos según días restantes
+- ✅ Modal con detalles de suscripción e historial de facturas
+- ✅ Colores dinámicos según días restantes (verde, naranja, rojo)
 - ✅ Modal overlay bloqueante cuando expira (no se puede cerrar)
 - ✅ Compatible con FilamentPHP v2+
 - ✅ Compatible con Livewire 2
 - ✅ Compatible con Laravel 10, 11 y 12
 - ✅ Auto-registro con Service Provider
 - ✅ Configuración vía .env
+- ✅ Cache de respuestas API
+- ✅ Manejo de errores robusto
+- ✅ Diseño moderno con efectos visuales
 
 ## Instalación
 
@@ -44,16 +43,40 @@ php artisan vendor:publish --provider="TuNamespace\LaravelSubscriptionModal\Lara
 Añadir en tu archivo `.env`:
 
 ```env
-SUBSCRIPTION_API_URL=https://api.tudominio.com/subscription
-SUBSCRIPTION_API_TOKEN=tu_token_aqui
+SUBSCRIPTION_API_URL=https://dbbk.officenet.pro/api/check-license
+SUBSCRIPTION_API_TOKEN=tu_token_sanctum_aqui
 SUBSCRIPTION_CHECK_INTERVAL=300
 ```
+
+**Nota**: El token debe ser un token de Sanctum válido para autenticarse con la API.
 
 ### 4. Incluir el componente en tu layout
 
 En tu layout principal (ej: `resources/views/layouts/app.blade.php`):
 
 ```php
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- ... -->
+    @livewireStyles
+</head>
+<body>
+    <!-- Tu contenido -->
+    
+    @livewire('subscription-modal::subscription-component')
+    
+    @livewireScripts
+</body>
+</html>
+```
+
+### 5. Para FilamentPHP
+
+Si usas FilamentPHP, añade el componente en tu layout de Filament:
+
+```php
+// En resources/views/vendor/filament/components/layouts/app.blade.php
 @livewire('subscription-modal::subscription-component')
 ```
 
@@ -61,11 +84,11 @@ En tu layout principal (ej: `resources/views/layouts/app.blade.php`):
 
 ### Variables de entorno
 
-| Variable | Descripción | Por defecto |
-|----------|-------------|-------------|
-| `SUBSCRIPTION_API_URL` | URL de la API de suscripción | - |
-| `SUBSCRIPTION_API_TOKEN` | Token para autenticación | - |
-| `SUBSCRIPTION_CHECK_INTERVAL` | Intervalo de verificación en segundos | 300 |
+| Variable | Descripción | Por defecto | Requerido |
+|----------|-------------|-------------|-----------|
+| `SUBSCRIPTION_API_URL` | URL de la API de verificación de licencia | - | ✅ |
+| `SUBSCRIPTION_API_TOKEN` | Token de Sanctum para autenticación | - | ✅ |
+| `SUBSCRIPTION_CHECK_INTERVAL` | Intervalo de verificación en segundos | 300 | ❌ |
 
 ### Configuración avanzada
 
@@ -76,9 +99,9 @@ return [
     'api_url' => env('SUBSCRIPTION_API_URL'),
     'api_token' => env('SUBSCRIPTION_API_TOKEN'),
     'check_interval' => env('SUBSCRIPTION_CHECK_INTERVAL', 300),
-    'warning_days' => 5,
-    'critical_days' => 2,
-    'position' => 'bottom-right', // bottom-right, bottom-left, top-right, top-left
+    'warning_days' => 5,        // Días para mostrar advertencia (naranja)
+    'critical_days' => 2,       // Días para mostrar crítico (rojo)
+    'position' => 'bottom-right', // Posición del badge
 ];
 ```
 
@@ -87,21 +110,26 @@ return [
 Este paquete es compatible con:
 
 - **Laravel**: 10.x, 11.x, 12.x
-- **Livewire**: 2.x
+- **Livewire**: 2.x (específicamente optimizado para Livewire 2)
 - **FilamentPHP**: 2.x, 3.x
 - **PHP**: 8.1+
 
-El paquete está optimizado para Livewire 2:
+### Características específicas de Livewire 2:
 
 - **Eventos**: Usa `emit()` para eventos y `protected $listeners`
 - **Componente unificado**: Badge, modal y overlay en un solo componente
 - **Rendimiento**: Código simplificado y optimizado
+- **Compatibilidad**: No compatible con Livewire 3
 
 ## Uso
 
-El paquete se auto-registra y funciona automáticamente. Los componentes principales son:
+El paquete se auto-registra y funciona automáticamente una vez configurado.
 
-- `SubscriptionComponent`: Componente unificado que incluye badge, modal y overlay
+### Comportamiento del badge:
+
+- **Verde**: Días restantes > 5
+- **Naranja**: Días restantes ≤ 5
+- **Rojo**: Días restantes ≤ 2 o expirado
 
 ### Comportamiento cuando la suscripción expira:
 
@@ -113,66 +141,84 @@ El paquete se auto-registra y funciona automáticamente. Los componentes princip
 
 ## API Response
 
-El backend debe devolver el estado de la suscripción en un objeto JSON:
+El backend debe devolver el estado de la suscripción en un objeto JSON con la siguiente estructura:
+
+### Ejemplo de respuesta exitosa:
 
 ```json
 {
-  "user": "John Doe",
+  "user": "test@test.com",
   "license_status": [
     {
-      "database": "db1",
       "license_status": {
-        "dias": 30,
-        "overdue": false,
-        "last_payment_date": "2025-05-05",
-        "license_type": "1 sucursal",
+        "dias": 0,
+        "overdue": true,
+        "last_payment_date": "2024-12-10",
         "invoices": [
           {
-            "start_date": "2025-01-01",
-            "end_date": "2025-01-31",
-            "amount": 25
+            "id": 1,
+            "end_date": "2025-08-10"
+          },
+          {
+            "id": 2,
+            "end_date": "2024-12-10"
           }
         ]
       }
-    },
+    }
+  ]
+}
+```
+
+### Ejemplo de respuesta sin suscripción activa:
+
+```json
+{
+  "user": "test@test.com",
+  "license_status": [
     {
-      "database": "db2",
       "license_status": "No active subscription found"
     }
   ]
 }
 ```
 
-## Plan de Trabajo
+### Estructura de la respuesta:
 
-### Fase 1: Estructura del Paquete
-- [x] Crear estructura de directorios
-- [ ] Configurar composer.json
-- [ ] Crear Service Provider
-- [ ] Configurar auto-registro
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `user` | string | Email del usuario |
+| `license_status` | array | Array de estados de licencias por base de datos |
+| `license_status[].license_status` | object/string | Estado de la licencia o mensaje de error |
+| `license_status[].license_status.dias` | integer | Días restantes de suscripción |
+| `license_status[].license_status.overdue` | boolean | Si la suscripción está vencida |
+| `license_status[].license_status.last_payment_date` | string | Fecha del último pago (YYYY-MM-DD) |
+| `license_status[].license_status.invoices` | array | Array de facturas |
+| `license_status[].license_status.invoices[].id` | integer | ID de la factura |
+| `license_status[].license_status.invoices[].end_date` | string | Fecha de fin de la factura (YYYY-MM-DD) |
 
-### Fase 2: Componentes Livewire
-- [ ] SubscriptionBadge component
-- [ ] SubscriptionModal component  
-- [ ] SubscriptionOverlay component
-- [ ] Estilos CSS/JS
+## Funcionalidades
 
-### Fase 3: Servicios y Lógica
-- [ ] SubscriptionService para API calls
-- [ ] Cálculo de días restantes
-- [ ] Lógica de colores
-- [ ] Cache de respuestas
+### Badge flotante
+- Muestra los días restantes de suscripción
+- Colores dinámicos según el estado
+- Posicionado en la esquina inferior derecha
+- Clic para abrir modal de detalles
 
-### Fase 4: Integración FilamentPHP
-- [ ] Detectar si Filament está instalado
-- [ ] Integrar con layouts de Filament
-- [ ] Compatibilidad con temas
+### Modal de detalles
+- Información del usuario
+- Estado de cada licencia/base de datos
+- Días restantes
+- Fecha del último pago
+- Fecha válida más alta (de las facturas)
+- Historial de facturas
+- Botón para verificar pago
 
-### Fase 5: Testing y Documentación
-- [ ] Tests unitarios
-- [ ] Tests de integración
-- [ ] Documentación completa
-- [ ] Ejemplos de uso
+### Modal overlay (cuando expira)
+- Bloquea toda la aplicación
+- No se puede cerrar
+- Diseño de advertencia
+- Solo permite verificar el estado de pago
 
 ## Desarrollo Local
 
@@ -183,6 +229,27 @@ Para desarrollo local, puedes usar:
 composer config repositories.subscription-modal path /ruta/al/paquete
 composer require tu-namespace/laravel-subscription-modal:dev-master
 ```
+
+### Testing local:
+
+1. Configura las variables de entorno en tu proyecto de prueba
+2. Asegúrate de que la API esté disponible
+3. El componente se auto-registrará y funcionará automáticamente
+
+## Troubleshooting
+
+### El badge no aparece:
+- Verifica que las variables de entorno estén configuradas
+- Revisa los logs de Laravel para errores de API
+- Asegúrate de que el componente esté incluido en el layout
+
+### "N/A" en la fecha válida más alta:
+- Verifica que la API devuelva el array `invoices` con `end_date`
+- Revisa que las fechas estén en formato válido (YYYY-MM-DD)
+
+### Modal no se cierra cuando expira:
+- Este es el comportamiento esperado para suscripciones vencidas
+- Solo se puede cerrar verificando el pago
 
 ## Licencia
 
